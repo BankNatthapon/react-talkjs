@@ -1,138 +1,72 @@
-/*
- * HomePage
- *
- * This is the first thing users see of our App, at the '/' route
- */
+/* eslint-disable no-return-assign */
+import React, { Component } from 'react';
+import Talk from 'talkjs';
 
-import React, { useEffect, memo } from 'react';
-import PropTypes from 'prop-types';
-import { Helmet } from 'react-helmet';
-import { FormattedMessage } from 'react-intl';
-import { connect } from 'react-redux';
-import { compose } from 'redux';
-import { createStructuredSelector } from 'reselect';
+export default class Messages extends Component {
+  constructor(props) {
+    super(props);
 
-import { useInjectReducer } from 'utils/injectReducer';
-import { useInjectSaga } from 'utils/injectSaga';
-import {
-  makeSelectRepos,
-  makeSelectLoading,
-  makeSelectError,
-} from 'containers/App/selectors';
-import H2 from 'components/H2';
-import ReposList from 'components/ReposList';
-import AtPrefix from './AtPrefix';
-import CenteredSection from './CenteredSection';
-import Form from './Form';
-import Input from './Input';
-import Section from './Section';
-import messages from './messages';
-import { loadRepos } from '../App/actions';
-import { changeUsername } from './actions';
-import { makeSelectUsername } from './selectors';
-import reducer from './reducer';
-import saga from './saga';
+    this.inbox = undefined;
+  }
 
-const key = 'home';
+  componentDidMount() {
+    // Promise can be `then`ed multiple times
+    Talk.ready
+      .then(() => {
+        const me = new Talk.User({
+          id: '12345231',
+          name: 'George Looney',
+          email: 'george@looney.net',
+          photoUrl: 'https://talkjs.com/docs/img/george.jpg',
+          welcomeMessage: 'Hey there! How are you? :-)',
+        });
 
-export function HomePage({
-  username,
-  loading,
-  error,
-  repos,
-  onSubmitForm,
-  onChangeUsername,
-}) {
-  useInjectReducer({ key, reducer });
-  useInjectSaga({ key, saga });
+        if (!window.talkSession) {
+          window.talkSession = new Talk.Session({
+            appId: 'tyC1G6i8',
+            me,
+          });
+        }
 
-  useEffect(() => {
-    // When initial state username is not null, submit the form to load repos
-    if (username && username.trim().length > 0) onSubmitForm();
-  }, []);
+        const other = new Talk.User({
+          id: '54321',
+          name: 'Ronald Raygun',
+          email: 'ronald@teflon.com',
+          photoUrl: 'https://talkjs.com/docs/img/ronald.jpg',
+          welcomeMessage: 'Hey there! Love to chat :-)',
+        });
 
-  const reposListProps = {
-    loading,
-    error,
-    repos,
-  };
+        // You control the ID of a conversation. oneOnOneId is a helper method that generates
+        // a unique conversation ID for a given pair of users.
+        const conversationId = Talk.oneOnOneId(me, other);
 
-  return (
-    <article>
-      <Helmet>
-        <title>Home Page</title>
-        <meta
-          name="description"
-          content="A React.js Boilerplate application homepage"
-        />
-      </Helmet>
-      <div>
-        <CenteredSection>
-          <H2>
-            <FormattedMessage {...messages.startProjectHeader} />
-          </H2>
-          <p>
-            <FormattedMessage {...messages.startProjectMessage} />
-          </p>
-        </CenteredSection>
-        <Section>
-          <H2>
-            <FormattedMessage {...messages.trymeHeader} />
-          </H2>
-          <Form onSubmit={onSubmitForm}>
-            <label htmlFor="username">
-              <FormattedMessage {...messages.trymeMessage} />
-              <AtPrefix>
-                <FormattedMessage {...messages.trymeAtPrefix} />
-              </AtPrefix>
-              <Input
-                id="username"
-                type="text"
-                placeholder="mxstbr"
-                value={username}
-                onChange={onChangeUsername}
-              />
-            </label>
-          </Form>
-          <ReposList {...reposListProps} />
-        </Section>
-      </div>
-    </article>
-  );
+        const conversation = window.talkSession.getOrCreateConversation(
+          conversationId,
+        );
+        conversation.setParticipant(me);
+        conversation.setParticipant(other);
+
+        this.inbox = window.talkSession.createInbox({
+          selected: conversation,
+        });
+        this.inbox.mount(this.container);
+      })
+      .catch(e => console.error(e));
+  }
+
+  componentWillUnmount() {
+    if (this.inbox) {
+      this.inbox.destroy();
+    }
+  }
+
+  render() {
+    return (
+      <span>
+        <div style={{ height: '500px' }} ref={c => (this.container = c)}>
+          Loading...
+        </div>
+      </span>
+    );
+  }
 }
-
-HomePage.propTypes = {
-  loading: PropTypes.bool,
-  error: PropTypes.oneOfType([PropTypes.object, PropTypes.bool]),
-  repos: PropTypes.oneOfType([PropTypes.array, PropTypes.bool]),
-  onSubmitForm: PropTypes.func,
-  username: PropTypes.string,
-  onChangeUsername: PropTypes.func,
-};
-
-const mapStateToProps = createStructuredSelector({
-  repos: makeSelectRepos(),
-  username: makeSelectUsername(),
-  loading: makeSelectLoading(),
-  error: makeSelectError(),
-});
-
-export function mapDispatchToProps(dispatch) {
-  return {
-    onChangeUsername: evt => dispatch(changeUsername(evt.target.value)),
-    onSubmitForm: evt => {
-      if (evt !== undefined && evt.preventDefault) evt.preventDefault();
-      dispatch(loadRepos());
-    },
-  };
-}
-
-const withConnect = connect(
-  mapStateToProps,
-  mapDispatchToProps,
-);
-
-export default compose(
-  withConnect,
-  memo,
-)(HomePage);
