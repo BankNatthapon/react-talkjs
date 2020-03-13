@@ -2,6 +2,9 @@
 import React, { Component } from 'react';
 import Talk from 'talkjs';
 
+/* Just enable import react-pdf library. it makes TalkJS not working in IE11  */
+// import { Document, Page } from 'react-pdf';
+
 export default class Messages extends Component {
   constructor(props) {
     super(props);
@@ -29,9 +32,9 @@ export default class Messages extends Component {
         }
 
         const other = new Talk.User({
-          id: '54321',
-          name: 'Ronald Raygun',
-          email: 'ronald@teflon.com',
+          id: '54322',
+          name: 'Ronald Raygun V2',
+          email: 'ronald_v2@teflon.com',
           photoUrl: 'https://talkjs.com/docs/img/ronald.jpg',
           welcomeMessage: 'Hey there! Love to chat :-)',
         });
@@ -64,7 +67,7 @@ export default class Messages extends Component {
     return (
       <span>
         <div style={{ height: '500px' }} ref={c => (this.container = c)}>
-          Loading...
+          TalkJS Loading...
         </div>
       </span>
     );
